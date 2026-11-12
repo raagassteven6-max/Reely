@@ -3,105 +3,211 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ReelTest – Movie Streaming Demo</title>
-<meta name="description" content="A test web app for browsing and streaming public-domain films, with TMDB metadata.">
+<title>ReelTest – Browse Movies & Shows</title>
+<meta name="description" content="Browse trending movies and TV shows with TMDB metadata, trailers, and free public-domain films.">
 <style>
-:root{--bg:#0e0f13;--card:#181a21;--text:#eceef3;--mute:#9aa0ae;--acc:#e5484d}
-@media(prefers-color-scheme:light){:root{--bg:#f6f6f8;--card:#fff;--text:#16171c;--mute:#5b6070}}
+:root{--bg:#0b0c10;--card:#16181f;--text:#f1f2f6;--mute:#a0a6b4;--acc:#e5484d}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif}
-header{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;gap:12px;align-items:center;padding:12px 16px;flex-wrap:wrap;border-bottom:1px solid #8883}
-h1{font-size:1.2rem;margin:0;color:var(--acc)}
-input{flex:1;min-width:160px;padding:9px 12px;border-radius:8px;border:1px solid #8886;background:var(--card);color:var(--text)}
-button{padding:9px 14px;border:0;border-radius:8px;background:var(--acc);color:#fff;cursor:pointer}
-main{padding:16px;max-width:1100px;margin:auto}
-h2{font-size:1.1rem;margin:24px 0 10px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
-.card{background:var(--card);border-radius:10px;overflow:hidden;cursor:pointer}
-.card img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#8883}
-.card p{margin:0;padding:8px;font-size:.85rem}
-.card small{color:var(--mute);display:block}
-#player{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;z-index:10;padding:12px}
-#player.on{display:flex}
-.box{width:100%;max-width:900px}
-.box iframe{width:100%;aspect-ratio:16/9;border:0;background:#000}
-.box h3{color:#fff;margin:0 0 8px}
-.msg{color:var(--mute)}
-footer{padding:24px 16px;text-align:center;color:var(--mute);font-size:.8rem}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,sans-serif;padding-bottom:20px}
+nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:14px;padding:10px 16px;background:linear-gradient(#000c,#0000)}
+nav.solid{background:#0b0c10f2}
+.logo{font-weight:800;color:var(--acc);font-size:1.25rem;letter-spacing:.5px}
+.tabs{display:flex;gap:4px}
+.tabs button{background:none;border:0;color:var(--mute);padding:6px 10px;border-radius:6px;cursor:pointer;font:inherit}
+.tabs button.on{color:#fff;font-weight:600}
+.sp{flex:1}
+nav input{width:min(220px,40vw);padding:7px 10px;border-radius:6px;border:1px solid #fff3;background:#0008;color:#fff}
+.ic{background:none;border:0;color:#fff;font-size:1.3rem;cursor:pointer}
+.hero{position:relative;height:72vh;min-height:380px;background-size:cover;background-position:center top;display:flex;align-items:flex-end}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,var(--bg) 0%,#0b0c1099 35%,#0000 70%),linear-gradient(90deg,#000b,#0000 60%)}
+.hero .in{position:relative;z-index:1;padding:0 16px 48px;max-width:560px}
+.hero h2{font-size:clamp(1.8rem,5vw,3rem);margin:0 0 8px}
+.hero p{color:#ddd;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:0 0 14px}
+.btn{padding:10px 20px;border:0;border-radius:6px;font:inherit;font-weight:600;cursor:pointer;margin-right:8px}
+.btn.p{background:#fff;color:#000}.btn.s{background:#fff3;color:#fff}
+.row{padding:0 16px;margin-top:-10px;position:relative;z-index:2}
+.row h3{margin:18px 0 8px;font-size:1.1rem}
+.strip{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:8px;scrollbar-width:thin}
+.c{flex:0 0 auto;width:140px;scroll-snap-align:start;cursor:pointer;transition:transform .15s}
+.c:hover{transform:scale(1.06)}
+.c img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;background:#2228;display:block}
+.c span{display:block;font-size:.78rem;color:var(--mute);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pad{padding-top:70px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;padding:0 16px}
+.sgrid .c{width:auto}
+.modal{position:fixed;inset:0;background:#000c;z-index:50;display:none;overflow-y:auto;padding:16px}
+.modal.on{display:block}
+.mb{max-width:860px;margin:20px auto;background:var(--card);border-radius:12px;overflow:hidden}
+.mh{height:300px;background-size:cover;background-position:center;position:relative}
+.mh::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,var(--card),#0000 70%)}
+.mh iframe{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:2;background:#000}
+.mi{padding:0 20px 22px}
+.mi h2{margin:0 0 4px}
+.meta{color:var(--mute);font-size:.9rem;margin-bottom:10px}
+.x{position:sticky;top:0;float:right;z-index:5;background:#000a;color:#fff;border:0;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;margin:8px}
+.msg{padding:90px 16px;color:var(--mute);text-align:center}
+.set label{display:block;margin:12px 0 4px;color:var(--mute);font-size:.85rem}
+.set input{width:100%;padding:9px;border-radius:6px;border:1px solid #fff3;background:#0008;color:#fff}
+.set .mi{padding-top:20px}
+footer{padding:28px 16px;text-align:center;color:var(--mute);font-size:.78rem}
 </style>
 </head>
 <body>
-<header>
-  <h1>ReelTest</h1>
-  <input id="q" placeholder="Search public-domain films…">
-  <button id="go">Search</button>
-</header>
-<main>
-  <h2>Public-domain films</h2>
-  <div id="films" class="grid"><p class="msg">Loading…</p></div>
-  <section id="tmdbSec" hidden>
-    <h2>Trending (TMDB metadata)</h2>
-    <div id="tmdb" class="grid"></div>
-  </section>
-</main>
-<div id="player"><div class="box"><h3 id="pt"></h3><iframe id="pf" allowfullscreen></iframe><button id="close" style="margin-top:10px">Close</button></div></div>
+<nav id="nav">
+  <span class="logo">REELTEST</span>
+  <div class="tabs" id="tabs">
+    <button data-v="home" class="on">Home</button>
+    <button data-v="movie">Movies</button>
+    <button data-v="tv">TV Shows</button>
+  </div>
+  <span class="sp"></span>
+  <input id="q" placeholder="Search…">
+  <button class="ic" id="gear" aria-label="Settings">⚙</button>
+</nav>
+<div id="app"></div>
 <footer>
-  Films stream from the Internet Archive (public domain). <br>
-  This product uses the TMDB API but is not endorsed or certified by TMDB.
+  This product uses the TMDB API but is not endorsed or certified by TMDB.<br>
+  Free films stream from the Internet Archive (public domain).
 </footer>
+
+<div class="modal" id="modal"><div class="mb" id="mb"></div></div>
+<div class="modal set" id="settings"><div class="mb"><button class="x" data-close>✕</button>
+  <div class="mi"><h2>Settings</h2>
+    <label for="key">TMDB API key (v3) or Read Access Token</label>
+    <input id="key" type="password" autocomplete="off" placeholder="Paste key or token">
+    <p class="meta">Stored only in this browser. Don't commit it to your repo.</p>
+    <button class="btn p" id="save">Save</button>
+    <button class="btn s" id="clear">Remove key</button>
+  </div></div></div>
+
 <script>
-// Paste your TMDB v3 API key here once you have it (leave empty to hide the section).
-const TMDB_KEY = "";
-
 const $ = s => document.querySelector(s);
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const IMG = "https://image.tmdb.org/t/p/";
+let view = "home", store = {};
 
-async function loadFilms(term){
-  const box = $("#films");
-  box.innerHTML = '<p class="msg">Loading…</p>';
-  const base = 'collection:(feature_films) AND mediatype:(movies)';
-  const query = term ? `${base} AND title:(${term})` : base;
-  const url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent(query) +
-    '&fl[]=identifier&fl[]=title&fl[]=year&sort[]=downloads+desc&rows=24&output=json';
-  try{
-    const r = await fetch(url);
-    const d = (await r.json()).response.docs;
-    if(!d.length){ box.innerHTML = '<p class="msg">No results.</p>'; return; }
-    box.innerHTML = d.map(f => `
-      <div class="card" data-id="${esc(f.identifier)}" data-t="${esc(f.title)}">
-        <img loading="lazy" src="https://archive.org/services/img/${encodeURIComponent(f.identifier)}" alt="">
-        <p>${esc(f.title)}<small>${esc(f.year || "")}</small></p>
-      </div>`).join("");
-  }catch(e){ box.innerHTML = '<p class="msg">Could not load films. Check your connection.</p>'; }
+const getKey = () => { try { return localStorage.getItem("tmdb_key") || ""; } catch { return store.k || ""; } };
+const setKey = v => { try { v ? localStorage.setItem("tmdb_key", v) : localStorage.removeItem("tmdb_key"); } catch { store.k = v; } };
+
+async function tm(path, params = {}) {
+  const k = getKey();
+  if (!k) throw new Error("nokey");
+  const u = new URL("https://api.themoviedb.org/3" + path);
+  const o = {};
+  if (k.startsWith("eyJ")) o.headers = { Authorization: "Bearer " + k };
+  else u.searchParams.set("api_key", k);
+  Object.entries(params).forEach(([a, b]) => u.searchParams.set(a, b));
+  const r = await fetch(u, o);
+  if (r.status === 401) throw new Error("badkey");
+  if (!r.ok) throw new Error("http");
+  return r.json();
 }
 
-async function loadTmdb(){
-  if(!TMDB_KEY) return;
-  try{
-    const r = await fetch('https://api.themoviedb.org/3/trending/movie/week?api_key=' + TMDB_KEY);
-    const d = (await r.json()).results || [];
-    $("#tmdb").innerHTML = d.slice(0,12).map(m => `
-      <div class="card">
-        <img loading="lazy" src="https://image.tmdb.org/t/p/w342${esc(m.poster_path)}" alt="">
-        <p>${esc(m.title)}<small>${esc((m.release_date||"").slice(0,4))} · ★ ${esc((m.vote_average||0).toFixed(1))}</small></p>
-      </div>`).join("");
-    $("#tmdbSec").hidden = false;
-  }catch(e){}
+const ROWS = {
+  home: [["Trending This Week","/trending/all/week"],["Popular Movies","/movie/popular"],["Top Rated Movies","/movie/top_rated"],["Popular TV Shows","/tv/popular"],["Top Rated TV Shows","/tv/top_rated"]],
+  movie: [["Popular","/movie/popular"],["Now Playing","/movie/now_playing"],["Top Rated","/movie/top_rated"],["Upcoming","/movie/upcoming"]],
+  tv: [["Popular","/tv/popular"],["On The Air","/tv/on_the_air"],["Top Rated","/tv/top_rated"],["Airing Today","/tv/airing_today"]]
+};
+
+function card(m, type) {
+  const t = m.media_type || type;
+  const name = m.title || m.name || "";
+  const yr = (m.release_date || m.first_air_date || "").slice(0, 4);
+  if (!m.poster_path) return "";
+  return `<div class="c" data-id="${m.id}" data-type="${t}"><img loading="lazy" alt="" src="${IMG}w342${m.poster_path}"><span>${esc(name)}${yr ? " · " + yr : ""}</span></div>`;
+}
+const rowHtml = (title, items, type) => `<div class="row"><h3>${esc(title)}</h3><div class="strip">${items.map(i => card(i, type)).join("")}</div></div>`;
+
+function msg(t) { $("#app").innerHTML = `<div class="msg">${t}</div>`; }
+
+async function render() {
+  const app = $("#app");
+  if (!getKey()) { msg('Add your TMDB key in <b>⚙ Settings</b> to load movies and shows.'); showFree(); return; }
+  app.innerHTML = '<div class="msg">Loading…</div>';
+  try {
+    const defs = ROWS[view];
+    const type = view === "home" ? null : view;
+    const res = await Promise.all(defs.map(d => tm(d[1])));
+    let html = "";
+    const hero = res[0].results.find(x => x.backdrop_path && x.overview);
+    if (hero) {
+      const t = hero.media_type || type || "movie";
+      html += `<div class="hero" style="background-image:url(${IMG}w1280${hero.backdrop_path})"><div class="in"><h2>${esc(hero.title || hero.name)}</h2><p>${esc(hero.overview)}</p><button class="btn p" data-id="${hero.id}" data-type="${t}" data-play>▶ Trailer</button><button class="btn s" data-id="${hero.id}" data-type="${t}">More Info</button></div></div>`;
+    } else html += '<div class="pad"></div>';
+    defs.forEach((d, i) => html += rowHtml(d[0], res[i].results, type));
+    app.innerHTML = html;
+    if (view === "home") await showFree(true);
+  } catch (e) {
+    msg(e.message === "badkey" ? "TMDB rejected that key. Check it in ⚙ Settings." : "Couldn't reach TMDB. Try again.");
+  }
 }
 
-$("#films").addEventListener("click", e => {
-  const c = e.target.closest(".card"); if(!c) return;
-  $("#pt").textContent = c.dataset.t;
-  $("#pf").src = 'https://archive.org/embed/' + encodeURIComponent(c.dataset.id);
-  $("#player").classList.add("on");
+async function showFree(append) {
+  try {
+    const url = "https://archive.org/advancedsearch.php?q=" + encodeURIComponent("collection:(feature_films) AND mediatype:(movies)") + "&fl[]=identifier&fl[]=title&fl[]=year&sort[]=downloads+desc&rows=20&output=json";
+    const d = (await (await fetch(url)).json()).response.docs;
+    const h = `<div class="row" style="${append ? "" : "padding-top:80px"}"><h3>Free to Watch — Public Domain Classics</h3><div class="strip">${d.map(f => `<div class="c" data-ia="${esc(f.identifier)}" data-t="${esc(f.title)}"><img loading="lazy" alt="" src="https://archive.org/services/img/${encodeURIComponent(f.identifier)}"><span>${esc(f.title)}${f.year ? " · " + esc(f.year) : ""}</span></div>`).join("")}</div></div>`;
+    $("#app").insertAdjacentHTML("beforeend", h);
+  } catch {}
+}
+
+async function openTitle(id, type, play) {
+  const m = $("#modal"), mb = $("#mb");
+  mb.innerHTML = '<button class="x" data-close>✕</button><div class="mi"><p class="meta" style="padding-top:60px">Loading…</p></div>';
+  m.classList.add("on");
+  try {
+    const d = await tm(`/${type}/${id}`, { append_to_response: "videos" });
+    const vids = (d.videos?.results || []).filter(v => v.site === "YouTube");
+    const tr = vids.find(v => v.type === "Trailer") || vids[0];
+    const name = d.title || d.name;
+    const yr = (d.release_date || d.first_air_date || "").slice(0, 4);
+    const run = d.runtime ? d.runtime + " min" : (d.number_of_seasons ? d.number_of_seasons + " season" + (d.number_of_seasons > 1 ? "s" : "") : "");
+    const bg = d.backdrop_path ? `style="background-image:url(${IMG}w1280${d.backdrop_path})"` : "";
+    mb.innerHTML = `<button class="x" data-close>✕</button><div class="mh" id="mh" ${bg}></div><div class="mi"><h2>${esc(name)}</h2><div class="meta">${[yr, run, "★ " + (d.vote_average || 0).toFixed(1), (d.genres || []).map(g => g.name).join(", ")].filter(Boolean).map(esc).join(" · ")}</div>${tr ? '<button class="btn p" id="tbtn">▶ Watch Trailer</button>' : ""}<p>${esc(d.overview)}</p></div>`;
+    const go = () => { $("#mh").innerHTML = `<iframe allow="autoplay; encrypted-media; fullscreen" allowfullscreen src="https://www.youtube.com/embed/${encodeURIComponent(tr.key)}?autoplay=1"></iframe>`; };
+    if (tr) { $("#tbtn").onclick = go; if (play) go(); }
+  } catch { mb.innerHTML = '<button class="x" data-close>✕</button><div class="mi"><p class="meta" style="padding-top:60px">Couldn\'t load details.</p></div>'; }
+}
+
+function openFree(id, title) {
+  $("#mb").innerHTML = `<button class="x" data-close>✕</button><div class="mh" style="height:auto"><iframe style="position:static;aspect-ratio:16/9;width:100%" allowfullscreen src="https://archive.org/embed/${encodeURIComponent(id)}"></iframe></div><div class="mi"><h2>${esc(title)}</h2><p class="meta">Public-domain film via the Internet Archive.</p></div>`;
+  $("#modal").classList.add("on");
+}
+
+function closeModal() { $("#modal").classList.remove("on"); $("#mb").innerHTML = ""; }
+
+async function search(q) {
+  if (!getKey()) return $("#gear").click();
+  $("#app").innerHTML = '<div class="msg">Searching…</div>';
+  try {
+    const r = (await tm("/search/multi", { query: q })).results.filter(x => x.media_type !== "person");
+    $("#app").innerHTML = `<div class="pad"></div><h3 style="padding:0 16px">Results for “${esc(q)}”</h3>` + (r.length ? `<div class="sgrid">${r.map(x => card(x)).join("")}</div>` : '<div class="msg" style="padding:30px">No results.</div>');
+  } catch { msg("Search failed."); }
+}
+
+document.addEventListener("click", e => {
+  const t = e.target;
+  if (t.closest("[data-close]") || t.id === "modal" || t.id === "settings") { closeModal(); $("#settings").classList.remove("on"); return; }
+  const c = t.closest("[data-id]");
+  if (c) return openTitle(c.dataset.id, c.dataset.type, c.hasAttribute("data-play"));
+  const f = t.closest("[data-ia]");
+  if (f) openFree(f.dataset.ia, f.dataset.t);
 });
-function closeP(){ $("#player").classList.remove("on"); $("#pf").src = ""; }
-$("#close").onclick = closeP;
-$("#player").addEventListener("click", e => { if(e.target.id === "player") closeP(); });
-$("#go").onclick = () => loadFilms($("#q").value.trim());
-$("#q").addEventListener("keydown", e => { if(e.key === "Enter") $("#go").click(); });
+$("#tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  view = b.dataset.v;
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+  $("#q").value = ""; render();
+});
+$("#q").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.value.trim()) search(e.target.value.trim()); });
+$("#gear").onclick = () => { $("#key").value = getKey(); $("#settings").classList.add("on"); };
+$("#save").onclick = () => { setKey($("#key").value.trim()); $("#settings").classList.remove("on"); render(); };
+$("#clear").onclick = () => { setKey(""); $("#key").value = ""; $("#settings").classList.remove("on"); render(); };
+window.addEventListener("scroll", () => $("#nav").classList.toggle("solid", scrollY > 40));
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); $("#settings").classList.remove("on"); } });
 
-loadFilms(); loadTmdb();
+render();
 </script>
 </body>
 </html>

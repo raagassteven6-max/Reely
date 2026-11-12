@@ -50,6 +50,15 @@ nav input{width:min(220px,40vw);padding:7px 10px;border-radius:6px;border:1px so
 .set label{display:block;margin:12px 0 4px;color:var(--mute);font-size:.85rem}
 .set input{width:100%;padding:9px;border-radius:6px;border:1px solid #fff3;background:#0008;color:#fff}
 .set .mi{padding-top:20px}
+.wp h4{margin:14px 0 6px;font-size:.9rem}
+.wp h4.fr{color:#4ade80}
+.wl{display:flex;flex-wrap:wrap;gap:10px}
+.wl a{display:flex;flex-direction:column;align-items:center;width:64px;color:var(--mute);font-size:.65rem;text-align:center;text-decoration:none;line-height:1.2}
+.wl img{width:48px;height:48px;border-radius:10px;margin-bottom:3px}
+.wl.fr img{outline:2px solid #4ade80}
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:14px;padding:0 16px}
+.pg div{cursor:pointer;text-align:center;font-size:.72rem;color:var(--mute);line-height:1.2}
+.pg img{width:64px;height:64px;border-radius:14px;display:block;margin:0 auto 4px}
 footer{padding:28px 16px;text-align:center;color:var(--mute);font-size:.78rem}
 </style>
 </head>
@@ -58,8 +67,10 @@ footer{padding:28px 16px;text-align:center;color:var(--mute);font-size:.78rem}
   <span class="logo">REELTEST</span>
   <div class="tabs" id="tabs">
     <button data-v="home" class="on">Home</button>
+    <button data-v="free">Free</button>
     <button data-v="movie">Movies</button>
-    <button data-v="tv">TV Shows</button>
+    <button data-v="tv">TV</button>
+    <button data-v="plat">Platforms</button>
   </div>
   <span class="sp"></span>
   <input id="q" placeholder="Search…">
@@ -68,7 +79,7 @@ footer{padding:28px 16px;text-align:center;color:var(--mute);font-size:.78rem}
 <div id="app"></div>
 <footer>
   This product uses the TMDB API but is not endorsed or certified by TMDB.<br>
-  Free films stream from the Internet Archive (public domain).
+  Streaming availability (Philippines) provided by JustWatch via TMDB.<br>Free films stream from the Internet Archive (public domain).
 </footer>
 
 <div class="modal" id="modal"><div class="mb" id="mb"></div></div>
@@ -104,11 +115,30 @@ async function tm(path, params = {}) {
   return r.json();
 }
 
+const PH = "PH";
+const FREE = { watch_region: PH, with_watch_monetization_types: "free|ads", sort_by: "popularity.desc" };
+const FREETOP = { ...FREE, sort_by: "vote_average.desc", "vote_count.gte": 300 };
+// [title, path, params, type, isHero]
 const ROWS = {
-  home: [["Trending This Week","/trending/all/week"],["Popular Movies","/movie/popular"],["Top Rated Movies","/movie/top_rated"],["Popular TV Shows","/tv/popular"],["Top Rated TV Shows","/tv/top_rated"]],
-  movie: [["Popular","/movie/popular"],["Now Playing","/movie/now_playing"],["Top Rated","/movie/top_rated"],["Upcoming","/movie/upcoming"]],
-  tv: [["Popular","/tv/popular"],["On The Air","/tv/on_the_air"],["Top Rated","/tv/top_rated"],["Airing Today","/tv/airing_today"]]
+  home: [
+    ["Free to Watch in the Philippines · Movies","/discover/movie",FREE,"movie"],
+    ["Free to Watch in the Philippines · TV","/discover/tv",FREE,"tv"],
+    ["Trending This Week","/trending/all/week",{},null,true],
+    ["Popular Movies","/movie/popular",{region:PH},"movie"],
+    ["Top Rated Movies","/movie/top_rated",{region:PH},"movie"],
+    ["Popular TV Shows","/tv/popular",{},"tv"],
+    ["Top Rated TV Shows","/tv/top_rated",{},"tv"]
+  ],
+  free: [
+    ["Free Movies · Popular","/discover/movie",FREE,"movie"],
+    ["Free Movies · Top Rated","/discover/movie",FREETOP,"movie"],
+    ["Free TV · Popular","/discover/tv",FREE,"tv"],
+    ["Free TV · Top Rated","/discover/tv",FREETOP,"tv"]
+  ],
+  movie: [["Popular","/movie/popular",{region:PH},"movie"],["Now Playing","/movie/now_playing",{region:PH},"movie"],["Top Rated","/movie/top_rated",{region:PH},"movie"],["Upcoming","/movie/upcoming",{region:PH},"movie"]],
+  tv: [["Popular","/tv/popular",{},"tv"],["On The Air","/tv/on_the_air",{},"tv"],["Top Rated","/tv/top_rated",{},"tv"],["Airing Today","/tv/airing_today",{},"tv"]]
 };
+const FREEISH = /tubi|pluto|roku|plex|youtube|viu|iwant/i;
 
 function card(m, type) {
   const t = m.media_type || type;
@@ -124,23 +154,48 @@ function msg(t) { $("#app").innerHTML = `<div class="msg">${t}</div>`; }
 async function render() {
   const app = $("#app");
   if (!getKey()) { msg('Add your TMDB key in <b>⚙ Settings</b> to load movies and shows.'); showFree(); return; }
+  if (view === "plat") return renderPlatforms();
   app.innerHTML = '<div class="msg">Loading…</div>';
   try {
     const defs = ROWS[view];
-    const type = view === "home" ? null : view;
-    const res = await Promise.all(defs.map(d => tm(d[1])));
+    const res = await Promise.all(defs.map(d => tm(d[1], d[2])));
     let html = "";
-    const hero = res[0].results.find(x => x.backdrop_path && x.overview);
+    let hi = defs.findIndex(d => d[4]); if (hi < 0) hi = 0;
+    const hero = res[hi].results.find(x => x.backdrop_path && x.overview);
     if (hero) {
-      const t = hero.media_type || type || "movie";
-      html += `<div class="hero" style="background-image:url(${IMG}w1280${hero.backdrop_path})"><div class="in"><h2>${esc(hero.title || hero.name)}</h2><p>${esc(hero.overview)}</p><button class="btn p" data-id="${hero.id}" data-type="${t}" data-play>▶ Trailer</button><button class="btn s" data-id="${hero.id}" data-type="${t}">More Info</button></div></div>`;
+      const t = hero.media_type || defs[hi][3] || "movie";
+      html += `<div class="hero" style="background-image:url(${IMG}w1280${hero.backdrop_path})"><div class="in"><h2>${esc(hero.title || hero.name)}</h2><p>${esc(hero.overview)}</p><button class="btn p" data-id="${hero.id}" data-type="${t}">Where to Watch</button><button class="btn s" data-id="${hero.id}" data-type="${t}" data-play>▶ Trailer</button></div></div>`;
     } else html += '<div class="pad"></div>';
-    defs.forEach((d, i) => html += rowHtml(d[0], res[i].results, type));
+    defs.forEach((d, i) => html += rowHtml(d[0], res[i].results, d[3]));
     app.innerHTML = html;
     if (view === "home") await showFree(true);
   } catch (e) {
     msg(e.message === "badkey" ? "TMDB rejected that key. Check it in ⚙ Settings." : "Couldn't reach TMDB. Try again.");
   }
+}
+
+async function renderPlatforms() {
+  const app = $("#app");
+  app.innerHTML = '<div class="msg">Loading…</div>';
+  try {
+    const [m, t] = await Promise.all([tm("/watch/providers/movie", { watch_region: PH }), tm("/watch/providers/tv", { watch_region: PH })]);
+    const map = new Map();
+    [...m.results, ...t.results].forEach(p => { if (!map.has(p.provider_id)) map.set(p.provider_id, p); });
+    const pr = x => x.display_priorities?.[PH] ?? x.display_priority ?? 999;
+    const list = [...map.values()].sort((a, b) => (FREEISH.test(b.provider_name) - FREEISH.test(a.provider_name)) || (pr(a) - pr(b)));
+    app.innerHTML = `<div class="pad"></div><h3 style="padding:0 16px">Streaming platforms in the Philippines</h3><p class="meta" style="padding:0 16px">Tap one to browse its catalog. Services with a free tier are listed first.</p><div class="pg">${list.map(p => `<div data-prov="${p.provider_id}" data-pn="${esc(p.provider_name)}"><img loading="lazy" alt="" src="${IMG}w92${p.logo_path}">${esc(p.provider_name)}</div>`).join("")}</div>`;
+  } catch { msg("Couldn't load platforms."); }
+}
+
+async function showProvider(id, name) {
+  const app = $("#app");
+  app.innerHTML = '<div class="msg">Loading…</div>';
+  window.scrollTo(0, 0);
+  try {
+    const q = { watch_region: PH, with_watch_providers: id, sort_by: "popularity.desc" };
+    const [mv, tv] = await Promise.all([tm("/discover/movie", q), tm("/discover/tv", q)]);
+    app.innerHTML = `<div class="pad"></div><h3 style="padding:0 16px">${esc(name)} · Philippines</h3>` + rowHtml("Movies", mv.results, "movie") + rowHtml("TV Shows", tv.results, "tv");
+  } catch { msg("Couldn't load that platform."); }
 }
 
 async function showFree(append) {
@@ -157,17 +212,33 @@ async function openTitle(id, type, play) {
   mb.innerHTML = '<button class="x" data-close>✕</button><div class="mi"><p class="meta" style="padding-top:60px">Loading…</p></div>';
   m.classList.add("on");
   try {
-    const d = await tm(`/${type}/${id}`, { append_to_response: "videos" });
+    const d = await tm(`/${type}/${id}`, { append_to_response: "videos,watch/providers" });
     const vids = (d.videos?.results || []).filter(v => v.site === "YouTube");
     const tr = vids.find(v => v.type === "Trailer") || vids[0];
     const name = d.title || d.name;
     const yr = (d.release_date || d.first_air_date || "").slice(0, 4);
     const run = d.runtime ? d.runtime + " min" : (d.number_of_seasons ? d.number_of_seasons + " season" + (d.number_of_seasons > 1 ? "s" : "") : "");
     const bg = d.backdrop_path ? `style="background-image:url(${IMG}w1280${d.backdrop_path})"` : "";
-    mb.innerHTML = `<button class="x" data-close>✕</button><div class="mh" id="mh" ${bg}></div><div class="mi"><h2>${esc(name)}</h2><div class="meta">${[yr, run, "★ " + (d.vote_average || 0).toFixed(1), (d.genres || []).map(g => g.name).join(", ")].filter(Boolean).map(esc).join(" · ")}</div>${tr ? '<button class="btn p" id="tbtn">▶ Watch Trailer</button>' : ""}<p>${esc(d.overview)}</p></div>`;
+    mb.innerHTML = `<button class="x" data-close>✕</button><div class="mh" id="mh" ${bg}></div><div class="mi"><h2>${esc(name)}</h2><div class="meta">${[yr, run, "★ " + (d.vote_average || 0).toFixed(1), (d.genres || []).map(g => g.name).join(", ")].filter(Boolean).map(esc).join(" · ")}</div>${tr ? '<button class="btn p" id="tbtn">▶ Watch Trailer</button>' : ""}<p>${esc(d.overview)}</p>${watchHtml(d)}</div>`;
     const go = () => { $("#mh").innerHTML = `<iframe allow="autoplay; encrypted-media; fullscreen" allowfullscreen src="https://www.youtube.com/embed/${encodeURIComponent(tr.key)}?autoplay=1"></iframe>`; };
     if (tr) { $("#tbtn").onclick = go; if (play) go(); }
   } catch { mb.innerHTML = '<button class="x" data-close>✕</button><div class="mi"><p class="meta" style="padding-top:60px">Couldn\'t load details.</p></div>'; }
+}
+
+function watchHtml(d) {
+  const wp = d["watch/providers"]?.results?.[PH];
+  const groups = [["Free","free",1],["Free with ads","ads",1],["Subscription","flatrate",0],["Rent","rent",0],["Buy","buy",0]];
+  let h = '<div class="wp"><h3 style="margin:18px 0 0">Where to watch in the Philippines</h3>';
+  let any = false;
+  groups.forEach(([label, k, fr]) => {
+    const arr = (wp?.[k] || []).slice().sort((a, b) => (a.display_priority ?? 99) - (b.display_priority ?? 99));
+    if (!arr.length) return;
+    any = true;
+    h += `<h4 class="${fr ? "fr" : ""}">${label}</h4><div class="wl ${fr ? "fr" : ""}">${arr.map(p => `<a href="${esc(wp.link)}" target="_blank" rel="noopener"><img alt="" src="${IMG}w92${p.logo_path}">${esc(p.provider_name)}</a>`).join("")}</div>`;
+  });
+  if (!any) h += '<p class="meta">Not currently listed on any streaming service in the Philippines.</p>';
+  else h += '<p class="meta" style="margin-top:10px">Tap a logo to open this title\'s watch page (data by JustWatch).</p>';
+  return h + "</div>";
 }
 
 function openFree(id, title) {
@@ -189,6 +260,8 @@ async function search(q) {
 document.addEventListener("click", e => {
   const t = e.target;
   if (t.closest("[data-close]") || t.id === "modal" || t.id === "settings") { closeModal(); $("#settings").classList.remove("on"); return; }
+  const pv = t.closest("[data-prov]");
+  if (pv) return showProvider(pv.dataset.prov, pv.dataset.pn);
   const c = t.closest("[data-id]");
   if (c) return openTitle(c.dataset.id, c.dataset.type, c.hasAttribute("data-play"));
   const f = t.closest("[data-ia]");
